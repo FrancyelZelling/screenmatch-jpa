@@ -22,6 +22,8 @@ public class Principal {
 
     private SerieRepository repositorio;
 
+    private List<Serie> series;
+
     public Principal(SerieRepository repositorio){
         this.repositorio = repositorio;
     }
@@ -33,6 +35,7 @@ public class Principal {
                 1 - Buscar séries
                 2 - Buscar episódios
                 3 - Listar séries procuradas
+                4 - Buscar série por nome
                 
                 0 - Sair                                 
                 """;
@@ -51,12 +54,28 @@ public class Principal {
                 case 3:
                     listarSeriesBuscadas();
                     break;
+                case 4:
+                    buscarSeriePorNome();
                 case 0:
                     System.out.println("Saindo...");
                     break;
                 default:
                     System.out.println("Opção inválida");
             }
+        }
+    }
+
+    private void buscarSeriePorNome() {
+        System.out.println("Digite o nome da série que deseja procurar: ");
+        var nome = leitura.nextLine();
+
+        var serieEncontrada = repositorio.findByTituloContainsIgnoreCase(nome);
+
+        if(serieEncontrada.isPresent()){
+            System.out.println("Série encontrada!");
+            System.out.println(serieEncontrada.get().getTitulo());
+        } else {
+            System.out.println("Série não encontrada.");
         }
     }
 
@@ -76,19 +95,38 @@ public class Principal {
     }
 
     private void buscarEpisodioPorSerie(){
-        DadosSerie dadosSerie = getDadosSerie();
-        List<DadosTemporada> temporadas = new ArrayList<>();
+        listarSeriesBuscadas();
+        System.out.println("Escolha uma série pelo nome: ");
+        var nomeSerie = leitura.nextLine();
 
-        for (int i = 1; i <= dadosSerie.totalTemporadas(); i++) {
-            var json = consumo.obterDados(ENDERECO + dadosSerie.titulo().replace(" ", "+") + "&season=" + i + API_KEY);
-            DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
-            temporadas.add(dadosTemporada);
+        Optional<Serie> serie = repositorio.findByTituloContainsIgnoreCase(nomeSerie);
+
+        if(serie.isPresent()){
+            List<DadosTemporada> temporadas = new ArrayList<>();
+            var serieEncontrada = serie.get();
+
+            for (int i = 1; i <= serieEncontrada.getTotalTemporadas(); i++) {
+                var json = consumo.obterDados(ENDERECO + serieEncontrada.getTitulo().replace(" ", "+") + "&season=" + i + API_KEY);
+                DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
+                temporadas.add(dadosTemporada);
+            }
+            temporadas.forEach(System.out::println);
+            List<Episodio> episodios = temporadas.stream()
+                    .flatMap(t -> t.episodios().stream()
+                            .map(e -> new Episodio(t.numero(), e))
+                    )
+                    .collect(Collectors.toList());
+
+            serieEncontrada.setEpisodios(episodios);
+            repositorio.save(serieEncontrada);
+
+        } else {
+            System.out.println("Série não encontrada.");
         }
-        temporadas.forEach(System.out::println);
+
     }
 
     private void listarSeriesBuscadas(){
-        List<Serie> series = new ArrayList<>();
         series = repositorio.findAll();
         series.stream()
                 .sorted(Comparator.comparing(Serie::getGenero))
