@@ -1,9 +1,7 @@
 package br.com.alura.screenmatch.model;
 
-
 import br.com.alura.screenmatch.service.ApiMyMemory;
 import jakarta.persistence.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -11,32 +9,46 @@ import java.util.OptionalDouble;
 @Entity
 @Table(name = "series")
 public class Serie {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(unique = true)
     private String titulo;
+
     private Integer totalTemporadas;
     private String atores;
     private String sinopse;
+
     @Enumerated(EnumType.STRING)
     private Categoria genero;
+
     private String posterUrl;
     private double avaliacao;
-    @OneToMany(mappedBy = "serie", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+
+    @OneToMany(
+        mappedBy = "serie",
+        cascade = CascadeType.ALL,
+        fetch = FetchType.EAGER
+    )
     private List<Episodio> episodios = new ArrayList<>();
 
-    public Serie(DadosSerie dadosSerie){
+    public Serie(DadosSerie dadosSerie) {
         this.titulo = dadosSerie.titulo();
         this.totalTemporadas = dadosSerie.totalTemporadas();
-        this.avaliacao = OptionalDouble.of(Double.valueOf(dadosSerie.avaliacao())).orElse(0.0);
-        this.genero = Categoria.fromText(dadosSerie.genero().split(",")[0].trim());
+        this.avaliacao = OptionalDouble.of(
+            Double.valueOf(dadosSerie.avaliacao())
+        ).orElse(0.0);
+        this.genero = Categoria.fromText(
+            dadosSerie.genero().split(",")[0].trim()
+        );
         this.atores = dadosSerie.atores();
         this.sinopse = ApiMyMemory.obterTraducao(dadosSerie.sinopse()).trim();
         this.posterUrl = dadosSerie.posterUrl();
     }
 
-    public Serie(){}
+    public Serie() {}
 
     public Long getId() {
         return id;
@@ -107,20 +119,30 @@ public class Serie {
     }
 
     public void setEpisodios(List<Episodio> episodios) {
-        episodios.forEach( episodio -> episodio.setSerie(this));
+        episodios.forEach(episodio -> episodio.setSerie(this));
         this.episodios = episodios;
     }
 
     @Override
     public String toString() {
-        return
-                "  genero=" + genero +
-                ", titulo='" + titulo + '\'' +
-                ", totalTemporadas=" + totalTemporadas +
-                ", atores='" + atores + '\'' +
-                ", sinopse='" + sinopse + '\'' +
-                ", posterUrl='" + posterUrl + '\'' +
-                ", avaliacao=" + avaliacao + '\'' +
-                ", episodios=" + episodios;
+        return (
+            "  genero=" +
+            genero +
+            ", titulo='" +
+            titulo +
+            '\'' +
+            ", totalTemporadas=" +
+            totalTemporadas +
+            ", atores='" +
+            atores +
+            '\'' +
+            ", sinopse='" +
+            sinopse +
+            '\'' +
+            ", avaliacao=" +
+            avaliacao +
+            '\''
+        );
+        // ", episodios=" + episodios;
     }
 }
